@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QueryMind — Text-to-SQL</title>
+  <meta name="description" content="Ask questions in plain English and get instant database answers. Powered by AI." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- ── LOGIN SCREEN ─────────────────────────────────────────── -->
+  <div id="login-screen" class="screen active">
+    <div class="login-container">
+      <div class="login-brand">
+        <div class="brand-icon">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <rect width="28" height="28" rx="8" fill="url(#grad1)" />
+            <path d="M7 9h14M7 14h9M7 19h11" stroke="white" stroke-width="2" stroke-linecap="round" />
+            <circle cx="21" cy="19" r="3" fill="white" opacity="0.9" />
+            <defs>
+              <linearGradient id="grad1" x1="0" y1="0" x2="28" y2="28">
+                <stop offset="0%" stop-color="#6366f1" />
+                <stop offset="100%" stop-color="#8b5cf6" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="brand-name">QueryMind</span>
+      </div>
+
+      <div class="login-card">
+        <div class="login-header">
+          <h1>Welcome back</h1>
+          <p>username: admin, password: admin</p>
+        </div>
+
+        <form id="login-form" novalidate>
+          <div class="form-group">
+            <label for="username">Username</label>
+            <div class="input-wrapper">
+              <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="5" r="3" stroke="#9ca3af" stroke-width="1.5" />
+                <path d="M2 13c0-2.761 2.686-5 6-5s6 2.239 6 5" stroke="#9ca3af" stroke-width="1.5"
+                  stroke-linecap="round" />
+              </svg>
+              <input type="text" id="username" name="username" placeholder="Enter your username" autocomplete="username"
+                required />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password</label>
+            <div class="input-wrapper">
+              <svg class="input-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <rect x="3" y="7" width="10" height="7" rx="1.5" stroke="#9ca3af" stroke-width="1.5" />
+                <path d="M5.5 7V5a2.5 2.5 0 015 0v2" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+              <input type="password" id="password" name="password" placeholder="Enter your password"
+                autocomplete="current-password" required />
+              <button type="button" id="toggle-password" class="toggle-password"
+                aria-label="Toggle password visibility">
+                <svg id="eye-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" stroke="#9ca3af" stroke-width="1.5" />
+                  <circle cx="8" cy="8" r="2" stroke="#9ca3af" stroke-width="1.5" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <div id="login-error" class="error-banner hidden">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="6" stroke="#ef4444" stroke-width="1.5" />
+              <path d="M7 4v3.5M7 9.5v.5" stroke="#ef4444" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            <span id="login-error-text">Invalid username or password</span>
+          </div>
+
+          <button type="submit" id="login-btn" class="btn btn-primary btn-full">
+            <span class="btn-text">Sign in</span>
+            <div class="btn-spinner hidden"></div>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MAIN APP SCREEN ───────────────────────────────────────── -->
+  <div id="app-screen" class="screen">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">
+          <svg width="24" height="24" viewBox="0 0 28 28" fill="none">
+            <rect width="28" height="28" rx="8" fill="url(#grad2)" />
+            <path d="M7 9h14M7 14h9M7 19h11" stroke="white" stroke-width="2" stroke-linecap="round" />
+            <circle cx="21" cy="19" r="3" fill="white" opacity="0.9" />
+            <defs>
+              <linearGradient id="grad2" x1="0" y1="0" x2="28" y2="28">
+                <stop offset="0%" stop-color="#6366f1" />
+                <stop offset="100%" stop-color="#8b5cf6" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <span class="brand-name">QueryMind</span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active" id="nav-query" data-tab="query">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5" />
+            <path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          <span>Ask a Question</span>
+        </button>
+        <button class="nav-item" id="nav-sql" data-tab="sql">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M2 4h12M2 8h8M2 12h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          <span>Run SQL</span>
+        </button>
+        <button class="nav-item" id="nav-schema" data-tab="schema">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="1" y="2" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.5" />
+            <rect x="1" y="7" width="14" height="3" rx="1" stroke="currentColor" stroke-width="1.5" />
+            <rect x="1" y="12" width="14" height="2" rx="1" stroke="currentColor" stroke-width="1.5" />
+          </svg>
+          <span>Schema</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-info">
+          <div class="user-avatar" id="sidebar-avatar">A</div>
+          <div class="user-details">
+            <span class="user-name" id="sidebar-username">—</span>
+            <span class="user-role" id="sidebar-role">—</span>
+          </div>
+        </div>
+        <button id="logout-btn" class="logout-btn" title="Sign out">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M6 2H3a1 1 0 00-1 1v10a1 1 0 001 1h3M10 11l3-3-3-3M13 8H6" stroke="currentColor" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="main-content">
+
+      <!-- ── TAB: Ask a Question ───────────────────── -->
+      <div class="tab-panel active" id="tab-query">
+        <div class="panel-header">
+          <h2>Ask a Question</h2>
+          <p>Type a question in plain English and get instant database results</p>
+        </div>
+
+        <div class="query-input-area">
+          <div class="query-input-wrapper">
+            <textarea id="question-input"
+              placeholder="e.g. Show me all employees in the Engineering department with salary above 80,000"
+              rows="3"></textarea>
+            <button id="ask-btn" class="btn btn-primary ask-btn">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M2 8h12M9 3l5 5-5 5" stroke="white" stroke-width="1.8" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+              <span>Ask</span>
+            </button>
+          </div>
+
+          <div id="query-result-area" class="result-area hidden">
+            <!-- SQL shown only for admin -->
+            <div id="sql-display" class="sql-display hidden">
+              <div class="sql-display-header">
+                <div class="sql-display-label">
+                  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                    <path d="M2 4h12M2 8h8M2 12h10" stroke="#6366f1" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                  Generated SQL
+                </div>
+                <button class="copy-btn" id="copy-sql-btn">
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
+                    <rect x="4" y="4" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.5" />
+                    <path d="M3 11V3a1 1 0 011-1h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                  </svg>
+                  Copy
+                </button>
+              </div>
+              <pre id="sql-code"><code></code></pre>
+            </div>
+
+            <div class="result-meta" id="result-meta"></div>
+            <div class="table-wrapper" id="query-table-wrapper"></div>
+          </div>
+
+          <div id="query-empty" class="empty-state">
+            <div class="empty-icon">
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <circle cx="18" cy="18" r="13" stroke="#d1d5db" stroke-width="2" />
+                <path d="M27 27l8 8" stroke="#d1d5db" stroke-width="2" stroke-linecap="round" />
+                <path d="M14 18h8M18 14v8" stroke="#d1d5db" stroke-width="2" stroke-linecap="round" />
+              </svg>
+            </div>
+            <p>Ask a question to see results here</p>
+          </div>
+
+          <div id="query-loading" class="loading-state hidden">
+            <div class="loading-dots">
+              <span></span><span></span><span></span>
+            </div>
+            <p>Thinking…</p>
+          </div>
+
+          <div id="query-error" class="error-state hidden">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="9" stroke="#f87171" stroke-width="1.5" />
+              <path d="M10 6v4.5M10 12.5v.5" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            <span id="query-error-text">Something went wrong</span>
+          </div>
+        </div>
+
+        <!-- ── TAB: Run SQL ──────────────────────────── -->
+        <div class="tab-panel" id="tab-sql">
+          <div class="panel-header">
+            <h2>Run SQL</h2>
+            <p>Execute a raw SQL query directly against the database</p>
+          </div>
+
+          <div class="sql-editor-area">
+            <div class="sql-editor-header">
+              <span>SQL Editor</span>
+              <button class="copy-btn" id="clear-sql-btn">Clear</button>
+            </div>
+            <textarea id="sql-input" class="sql-editor" spellcheck="false"
+              placeholder="SELECT * FROM products LIMIT 10;"></textarea>
+            <div class="sql-editor-footer">
+              <button id="run-sql-btn" class="btn btn-primary">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                  <polygon points="3,2 13,8 3,14" fill="white" />
+                </svg>
+                Run Query
+              </button>
+            </div>
+          </div>
+
+          <div id="sql-result-area" class="result-area hidden">
+            <div class="result-meta" id="sql-result-meta"></div>
+            <div class="table-wrapper" id="sql-table-wrapper"></div>
+          </div>
+
+          <div id="sql-empty" class="empty-state">
+            <div class="empty-icon">
+              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                <rect x="6" y="6" width="28" height="28" rx="4" stroke="#d1d5db" stroke-width="2" />
+                <path d="M13 16l5 5-5 5M21 26h6" stroke="#d1d5db" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </div>
+            <p>Enter a SQL query and click Run</p>
+          </div>
+
+          <div id="sql-loading" class="loading-state hidden">
+            <div class="loading-dots"><span></span><span></span><span></span></div>
+            <p>Executing…</p>
+          </div>
+
+          <div id="sql-error" class="error-state hidden">
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <circle cx="10" cy="10" r="9" stroke="#f87171" stroke-width="1.5" />
+              <path d="M10 6v4.5M10 12.5v.5" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            <span id="sql-error-text">Something went wrong</span>
+          </div>
+        </div>
+
+        <!-- ── TAB: Schema ───────────────────────────── -->
+        <div class="tab-panel" id="tab-schema">
+          <div class="panel-header">
+            <h2>Database Schema</h2>
+            <p>Tables and columns you have access to based on your role</p>
+          </div>
+
+          <div class="schema-grid" id="schema-grid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
