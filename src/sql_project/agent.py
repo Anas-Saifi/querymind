@@ -13,7 +13,7 @@ from .access import AccessDenied, run_query
 
 load_dotenv()
 
-BASE_URL = "https://sql-model-70892236230.us-central1.run.app/v1"
+BASE_URL = "https://modal.com/apps/anas-saifi123456786/main/deployed/sql-llm"
 API_KEY = os.environ["SQL_MODEL_KEY"]
 
 SYSTEM_PROMPT = "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."
