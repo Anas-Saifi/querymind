@@ -142,7 +142,7 @@ oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/auth/login"
 )
 
-
+TOKEN_EXPIRE_MINUTES = 60
 def create_access_token(
     user_id: int,
     role: str
