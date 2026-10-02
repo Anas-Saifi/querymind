@@ -26,6 +26,9 @@ from sql_project.access import (
     AccessDenied, build_schema, get_allowed_tables, run_query,
 )
 
+import httpx
+from fastapi import BackgroundTasks
+
 load_dotenv()
 
 
@@ -64,30 +67,12 @@ class AgentRequest(BaseModel):
 # CONFIG
 # ============================================================
 
-DATABASE_URL = os.getenv("DATABASE_URI")
+DATABASE_URL = os.environ["DATABASE_URI"]
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
-JWT_SECRET = os.getenv("JWT_SECRET_KEY")
-
-JWT_ALGORITHM = "HS256"
-TOKEN_EXPIRE_MINUTES = 60
-
-
-# ============================================================
-# DATABASE
-# ============================================================
-DB_USER = os.environ["DB_USER"]
-DB_PASSWORD = os.environ["DB_PASSWORD"]
-DB_NAME = os.environ["DB_NAME"]
-INSTANCE_CONNECTION_NAME = os.environ["INSTANCE_CONNECTION_NAME"]
-
-DATABASE_URL = (
-    f"postgresql://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}"
-    f"?host=/cloudsql/{INSTANCE_CONNECTION_NAME}"
-)
-
-
-
-engine = create_engine(DATABASE_URL)
+# Neon suspends idle compute, so check connections before use
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=300)
 
 SessionLocal = sessionmaker(
     bind=engine,
@@ -352,4 +337,22 @@ async def agent_query(request: AgentRequest, current_user: User = Depends(get_cu
 
 
 # Serve frontend — must be mounted LAST so API routes take precedence
+from sql_project.agent import BASE_URL
+
+async def _wake_model():
+    try:
+        url = BASE_URL.rstrip("/").removesuffix("/v1") + "/health"
+        async with httpx.AsyncClient(timeout=120) as c:
+            await c.get(url)
+    except Exception:
+        pass
+
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+@app.get("/warmup")
+def warmup(background_tasks: BackgroundTasks):
+    background_tasks.add_task(_wake_model)
+    return {"ok": True}
 app.mount("/ui", StaticFiles(directory="src/backend/static", html=True), name="ui")
