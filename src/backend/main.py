@@ -161,8 +161,8 @@ def create_access_token(
 
     return jwt.encode(
         payload,
-        JWT_SECRET,
-        algorithm=JWT_ALGORITHM
+        os.environ["JWT_SECRET_KEY"],
+        algorithm="HS256"
     )
 
 
