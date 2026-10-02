@@ -230,72 +230,72 @@
             <span id="query-error-text">Something went wrong</span>
           </div>
         </div>
+      </div>
+      <!-- ── TAB: Run SQL ──────────────────────────── -->
+      <div class="tab-panel" id="tab-sql">
+        <div class="panel-header">
+          <h2>Run SQL</h2>
+          <p>Execute a raw SQL query directly against the database</p>
+        </div>
 
-        <!-- ── TAB: Run SQL ──────────────────────────── -->
-        <div class="tab-panel" id="tab-sql">
-          <div class="panel-header">
-            <h2>Run SQL</h2>
-            <p>Execute a raw SQL query directly against the database</p>
+        <div class="sql-editor-area">
+          <div class="sql-editor-header">
+            <span>SQL Editor</span>
+            <button class="copy-btn" id="clear-sql-btn">Clear</button>
           </div>
-
-          <div class="sql-editor-area">
-            <div class="sql-editor-header">
-              <span>SQL Editor</span>
-              <button class="copy-btn" id="clear-sql-btn">Clear</button>
-            </div>
-            <textarea id="sql-input" class="sql-editor" spellcheck="false"
-              placeholder="SELECT * FROM products LIMIT 10;"></textarea>
-            <div class="sql-editor-footer">
-              <button id="run-sql-btn" class="btn btn-primary">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                  <polygon points="3,2 13,8 3,14" fill="white" />
-                </svg>
-                Run Query
-              </button>
-            </div>
-          </div>
-
-          <div id="sql-result-area" class="result-area hidden">
-            <div class="result-meta" id="sql-result-meta"></div>
-            <div class="table-wrapper" id="sql-table-wrapper"></div>
-          </div>
-
-          <div id="sql-empty" class="empty-state">
-            <div class="empty-icon">
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-                <rect x="6" y="6" width="28" height="28" rx="4" stroke="#d1d5db" stroke-width="2" />
-                <path d="M13 16l5 5-5 5M21 26h6" stroke="#d1d5db" stroke-width="2" stroke-linecap="round"
-                  stroke-linejoin="round" />
+          <textarea id="sql-input" class="sql-editor" spellcheck="false"
+            placeholder="SELECT * FROM products LIMIT 10;"></textarea>
+          <div class="sql-editor-footer">
+            <button id="run-sql-btn" class="btn btn-primary">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <polygon points="3,2 13,8 3,14" fill="white" />
               </svg>
-            </div>
-            <p>Enter a SQL query and click Run</p>
+              Run Query
+            </button>
           </div>
+        </div>
 
-          <div id="sql-loading" class="loading-state hidden">
-            <div class="loading-dots"><span></span><span></span><span></span></div>
-            <p>Executing…</p>
-          </div>
+        <div id="sql-result-area" class="result-area hidden">
+          <div class="result-meta" id="sql-result-meta"></div>
+          <div class="table-wrapper" id="sql-table-wrapper"></div>
+        </div>
 
-          <div id="sql-error" class="error-state hidden">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <circle cx="10" cy="10" r="9" stroke="#f87171" stroke-width="1.5" />
-              <path d="M10 6v4.5M10 12.5v.5" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" />
+        <div id="sql-empty" class="empty-state">
+          <div class="empty-icon">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <rect x="6" y="6" width="28" height="28" rx="4" stroke="#d1d5db" stroke-width="2" />
+              <path d="M13 16l5 5-5 5M21 26h6" stroke="#d1d5db" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
             </svg>
-            <span id="sql-error-text">Something went wrong</span>
           </div>
+          <p>Enter a SQL query and click Run</p>
         </div>
 
-        <!-- ── TAB: Schema ───────────────────────────── -->
-        <div class="tab-panel" id="tab-schema">
-          <div class="panel-header">
-            <h2>Database Schema</h2>
-            <p>Tables and columns you have access to based on your role</p>
-          </div>
-
-          <div class="schema-grid" id="schema-grid">
-            <!-- Rendered by JS -->
-          </div>
+        <div id="sql-loading" class="loading-state hidden">
+          <div class="loading-dots"><span></span><span></span><span></span></div>
+          <p>Executing…</p>
         </div>
+
+        <div id="sql-error" class="error-state hidden">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="9" stroke="#f87171" stroke-width="1.5" />
+            <path d="M10 6v4.5M10 12.5v.5" stroke="#f87171" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+          <span id="sql-error-text">Something went wrong</span>
+        </div>
+      </div>
+
+      <!-- ── TAB: Schema ───────────────────────────── -->
+      <div class="tab-panel" id="tab-schema">
+        <div class="panel-header">
+          <h2>Database Schema</h2>
+          <p>Tables and columns you have access to based on your role</p>
+        </div>
+
+        <div class="schema-grid" id="schema-grid">
+          <!-- Rendered by JS -->
+        </div>
+      </div>
 
     </main>
   </div>
