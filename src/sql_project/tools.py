@@ -1,4 +1,4 @@
-from .postgres_mcp_client import postgres_client
+from .mysql_mcp_client import mysql_client
 import logging
 from langchain_core.tools import tool
 
@@ -12,8 +12,8 @@ def execute_sql(sql: str) -> str:
 
 async def get_all_tools():
     try:
-        postgres_tools = await postgres_client()
-        return [*postgres_tools]
+        mysql_tools = await mysql_client()
+        return [*mysql_tools]
     except Exception as exc:
-        logger.warning("Postgres MCP unavailable: %s. Using fallback SQL tool.", exc)
+        logger.warning("MySQL MCP unavailable: %s. Using fallback SQL tool.", exc)
         return [execute_sql]

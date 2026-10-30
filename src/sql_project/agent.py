@@ -43,7 +43,7 @@ SCHEMA = (
 def build_prompt(question: str) -> str:
     return (
         f"Database schema:\n\n{SCHEMA}\n\n"
-        "Generate the SQL query for the following request.\n"
+        "Generate the MySQL query for the following request.\n"
         "Return only the SQL query.\n\n"
         f"Question: {question}"
     )
@@ -107,7 +107,13 @@ async def build_graph(engine):
         except AccessDenied:
             return {"denied": True}
         except DBAPIError as e:
-            if getattr(e.orig, "pgcode", None) == "42501":
+            orig = getattr(e, "orig", None)
+            err_code = getattr(orig, "errno", None) or (orig.args[0] if getattr(orig, "args", None) and isinstance(orig.args[0], int) else None)
+            pgcode = getattr(orig, "pgcode", None)
+            # MySQL access denied error codes: 1142 (TABLE ACCESS), 1143 (COLUMN ACCESS),
+            # 1227 (SPECIFIC ACCESS), 1044 (DB ACCESS), 1045 (USER ACCESS), 3530 (ROLE NOT GRANTED)
+            # PostgreSQL: 42501 (insufficient_privilege)
+            if pgcode == "42501" or err_code in (1142, 1143, 1227, 1044, 1045, 3530):
                 return {"denied": True}
             return {"error": "The generated query failed to run"}
 
@@ -128,7 +134,12 @@ if __name__ == "__main__":
     from sqlalchemy import create_engine
 
     async def main():
-        engine = create_engine(os.environ["DATABASE_URI"])
+        db_uri = os.environ.get("DATABASE_URI", "")
+        if db_uri.startswith("postgres://"):
+            db_uri = db_uri.replace("postgres://", "postgresql://", 1)
+        elif db_uri.startswith("mysql://"):
+            db_uri = db_uri.replace("mysql://", "mysql+pymysql://", 1)
+        engine = create_engine(db_uri)
         graph = await build_graph(engine)
         for role in ("manager", "employee"):
             result = await graph.ainvoke({

@@ -73,8 +73,10 @@ class AgentRequest(BaseModel):
 DATABASE_URL = os.environ["DATABASE_URI"]
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+elif DATABASE_URL.startswith("mysql://"):
+    DATABASE_URL = DATABASE_URL.replace("mysql://", "mysql+pymysql://", 1)
 
-# Neon suspends idle compute, so check connections before use
+# pool_pre_ping checks connections before use and pool_recycle avoids stale idle connections
 engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_recycle=300)
 
 SessionLocal = sessionmaker(

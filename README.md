@@ -3,11 +3,12 @@
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.141+-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![LangGraph](https://img.shields.io/badge/LangGraph-1.2+-FF6F00?style=for-the-badge)](https://langchain-ai.github.io/langgraph/)
+[![MySQL](https://img.shields.io/badge/MySQL-8.0+-4479A1?style=for-the-badge&logo=mysql&logoColor=white)](https://www.mysql.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Google Cloud Run](https://img.shields.io/badge/Google_Cloud_Run-Deployed-4285F4?style=for-the-badge&logo=googlecloud&logoColor=white)](https://cloud.google.com/run)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
-**QueryMind** is an enterprise-grade, role-aware Text-to-SQL system that turns natural language questions into safe, optimized PostgreSQL queries. It features end-to-end security through **multi-layered Role-Based Access Control (RBAC)**, **AST-level SQL validation with `sqlglot`**, and **database-level transaction isolation**, coupled with an interactive web UI.
+**QueryMind** is an enterprise-grade, role-aware Text-to-SQL system that turns natural language questions into safe, optimized MySQL / PostgreSQL queries. It features end-to-end security through **multi-layered Role-Based Access Control (RBAC)**, **AST-level SQL validation with `sqlglot`**, and **database-level transaction isolation**, coupled with an interactive web UI.
 
 ---
 
@@ -37,8 +38,8 @@ Traditional Text-to-SQL solutions suffer from security vulnerabilities (SQL inje
 
 **QueryMind** solves this with a **zero-trust, defense-in-depth architecture**:
 1. **Schema Sandboxing**: The LLM prompt only receives schema definitions for tables the current user is permitted to view.
-2. **AST Static Analysis**: Generated SQL is parsed and inspected using `sqlglot` to reject dangerous keywords (`INSERT`, `UPDATE`, `DROP`, `DELETE`), disallow multi-statement execution, and block unauthorized tables or system catalog queries.
-3. **Engine-Level Enforcement**: Queries execute inside a restricted transaction with `SET LOCAL default_transaction_read_only = on`, strict execution timeouts, and impersonation of PostgreSQL database roles (`SET LOCAL ROLE`).
+2. **AST Static Analysis**: Generated SQL is parsed and inspected using `sqlglot` (with MySQL dialect parsing by default) to reject dangerous keywords (`INSERT`, `UPDATE`, `DROP`, `DELETE`), disallow multi-statement execution, and block unauthorized tables or system catalog queries.
+3. **Engine-Level Enforcement**: Queries execute inside a restricted transaction with read-only transaction enforcement (`SET TRANSACTION READ ONLY` / `SET LOCAL default_transaction_read_only = on`), strict execution timeouts (`max_execution_time` / `statement_timeout`), and role impersonation (`SET ROLE`).
 
 ---
 
@@ -68,8 +69,8 @@ flowchart LR
     Delay --> GenNode
     RetryCheck -- No --> AST[Validate AST with sqlglot]
     AST -- Violation --> Denied([Access Denied / Error])
-    AST -- Valid --> ExecNode[Node: execute\nRun with SET LOCAL ROLE]
-    ExecNode --> DB[(PostgreSQL / Cloud SQL)]
+    AST -- Valid --> ExecNode[Node: execute\nRun with Read-Only Controls & SET ROLE]
+    ExecNode --> DB[(MySQL / PostgreSQL / Cloud SQL)]
     DB --> Output([Structured JSON Data])
 ```
 
@@ -93,8 +94,8 @@ QueryMind maps authenticated roles to strict table permissions:
 ### Defensive Guardrails:
 - **Disallowed Operations**: Any query attempting `INSERT`, `UPDATE`, `DELETE`, `DROP`, `ALTER`, or `CREATE` is rejected immediately.
 - **Single-Statement Enforced**: Multi-statement chaining (`;`) is blocked.
-- **Catalog Protection**: Queries querying `information_schema.*` or `pg_catalog.*` are blocked.
-- **Statement Timeouts**: Each query execution is capped with `statement_timeout = '5000'` (5 seconds).
+- **Catalog Protection**: Queries querying `information_schema.*`, `mysql.*`, or `pg_catalog.*` are blocked.
+- **Statement Timeouts**: Each query execution is capped with statement timeouts (5 seconds).
 
 ---
 
@@ -103,11 +104,12 @@ QueryMind maps authenticated roles to strict table permissions:
 - **Runtime & Language**: Python 3.12
 - **Agent Framework**: LangGraph, LangChain, LangChain-OpenAI
 - **Backend**: FastAPI, Uvicorn, Pydantic, SQLAlchemy 2.0
-- **SQL Parser & Security**: `sqlglot`, `psycopg2-binary`
+- **Database Drivers**: `pymysql`, `psycopg2-binary`
+- **SQL Parser & Security**: `sqlglot`
 - **Security & Auth**: `passlib[bcrypt]`, `python-jose`, `python-multipart`
 - **Package Manager**: [`uv`](https://github.com/astral-sh/uv)
 - **Frontend**: Vanilla HTML5, Modern CSS3 (Glassmorphism & Variables), JavaScript ES6+
-- **Database**: PostgreSQL / Google Cloud SQL
+- **Database**: MySQL / PostgreSQL / Google Cloud SQL
 - **Cloud Platform**: Google Cloud Run (Containerized Serverless)
 
 ---
@@ -140,7 +142,8 @@ querymind/
         ├── access.py             # RBAC configuration, AST validator (sqlglot), DB runner
         ├── agent.py              # LangGraph pipeline, prompts, model retry logic
         ├── tools.py              # Tool definitions for SQL execution
-        └── postgres_mcp_client.py# Model Context Protocol (MCP) Postgres integration
+        ├── mysql_mcp_client.py   # Model Context Protocol (MCP) MySQL integration
+        └── postgres_mcp_client.py# Backward-compatibility alias
 ```
 
 ---
@@ -151,7 +154,7 @@ querymind/
 
 - [Python 3.12+](https://www.python.org/downloads/)
 - [`uv`](https://docs.astral.sh/uv/getting-started/installation/) (Fast Python package manager)
-- PostgreSQL running locally or hosted on Cloud SQL
+- MySQL (or PostgreSQL) running locally or hosted on Cloud SQL
 - Google Cloud SDK (`gcloud`) *(optional, for deployment)*
 
 ### Local Installation
@@ -172,8 +175,14 @@ querymind/
 Create a `.env` file in the project root:
 
 ```env
-# Database Credentials
-DATABASE_URI=postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>
+# Database Credentials (MySQL)
+DATABASE_URI=mysql+pymysql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:3306/<DB_NAME>
+# Or for PostgreSQL:
+# DATABASE_URI=postgresql://<DB_USER>:<DB_PASSWORD>@<DB_HOST>:5432/<DB_NAME>
+DB_USER=app_user
+DB_PASSWORD=your_password
+DB_NAME=company_db
+INSTANCE_CONNECTION_NAME=project-id:region:instance-name # For Cloud SQL
 DB_USER=app_user
 DB_PASSWORD=your_password
 DB_NAME=company_db

@@ -48,14 +48,21 @@ def build_schema(role: str) -> str:
     return text
 
 
-def validate_sql(sql: str, role: str) -> str:
+def validate_sql(sql: str, role: str, dialect: str = "mysql") -> str:
     allowed = get_allowed_tables(role)
     if not allowed:
         raise AccessDenied("no permissions")
     try:
-        stmts = [s for s in sqlglot.parse(sql, read="postgres") if s is not None]
+        stmts = [s for s in sqlglot.parse(sql, read=dialect) if s is not None]
     except (ParseError, TokenError):
-        raise AccessDenied("invalid sql")
+        # Fallback to mysql if dialect wasn't mysql
+        if dialect != "mysql":
+            try:
+                stmts = [s for s in sqlglot.parse(sql, read="mysql") if s is not None]
+            except (ParseError, TokenError):
+                raise AccessDenied("invalid sql")
+        else:
+            raise AccessDenied("invalid sql")
 
     if len(stmts) != 1 or not isinstance(stmts[0], (exp.Select, exp.Union)):
         raise AccessDenied("only a single SELECT is allowed")
@@ -67,7 +74,7 @@ def validate_sql(sql: str, role: str) -> str:
     ctes = {c.alias_or_name.lower() for c in tree.find_all(exp.CTE)}
     tables = set()
     for t in tree.find_all(exp.Table):
-        if t.db or t.catalog:                    # blocks pg_catalog.*, information_schema.*, etc.
+        if t.db or t.catalog:                    # blocks mysql.*, information_schema.*, pg_catalog.*, etc.
             raise AccessDenied("schema-qualified tables are not allowed")
         tables.add(t.name.lower())
     tables -= ctes
@@ -78,13 +85,40 @@ def validate_sql(sql: str, role: str) -> str:
 
 
 def run_query(engine, sql: str, role: str, max_rows: int = 200) -> dict:
-    safe_sql = validate_sql(sql, role)
+    dialect_name = getattr(engine.dialect, "name", "mysql")
+    read_dialect = "mysql" if "mysql" in dialect_name else "postgres"
+    safe_sql = validate_sql(sql, role, dialect=read_dialect)
     db_role = DB_ROLES[role]                     # KeyError impossible after validate_sql
     with engine.connect() as conn:
-        with conn.begin():
-            conn.exec_driver_sql(f'SET LOCAL ROLE "{db_role}"')
-            conn.exec_driver_sql("SET LOCAL statement_timeout = '5000'")
-            conn.exec_driver_sql("SET LOCAL default_transaction_read_only = on")
-            result = conn.exec_driver_sql(safe_sql)   # exec_driver_sql so LIKE '%x%' and ':' aren't parsed as params
-            rows = result.fetchmany(max_rows)
-            return {"columns": list(result.keys()), "rows": [list(r) for r in rows]}
+        if "mysql" in dialect_name:
+            # MySQL execution controls:
+            # 1. Statement execution timeout: 5000ms (MySQL 5.7.8+)
+            try:
+                conn.exec_driver_sql("SET SESSION max_execution_time = 5000")
+            except Exception:
+                pass
+
+            # 2. Impersonate role if configured in MySQL 8.0+
+            try:
+                conn.exec_driver_sql(f"SET ROLE `{db_role}`")
+            except Exception:
+                pass
+
+            # 3. Read-only transaction enforcement
+            try:
+                conn.exec_driver_sql("SET TRANSACTION READ ONLY")
+            except Exception:
+                pass
+
+            with conn.begin():
+                result = conn.exec_driver_sql(safe_sql)   # exec_driver_sql so LIKE '%x%' and ':' aren't parsed as params
+                rows = result.fetchmany(max_rows)
+                return {"columns": list(result.keys()), "rows": [list(r) for r in rows]}
+        else:
+            with conn.begin():
+                conn.exec_driver_sql(f'SET LOCAL ROLE "{db_role}"')
+                conn.exec_driver_sql("SET LOCAL statement_timeout = '5000'")
+                conn.exec_driver_sql("SET LOCAL default_transaction_read_only = on")
+                result = conn.exec_driver_sql(safe_sql)   # exec_driver_sql so LIKE '%x%' and ':' aren't parsed as params
+                rows = result.fetchmany(max_rows)
+                return {"columns": list(result.keys()), "rows": [list(r) for r in rows]}
